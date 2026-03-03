@@ -14,12 +14,16 @@ import {
   getDistributionData,
   getCategoricalDistribution,
   getBoxPlotData,
+  getRadarData,
+  getMapData,
 } from "@/lib/dataAnalysis";
 import { generateChartSuggestion } from "@/lib/aiService";
 import { toast } from "sonner";
 import BoxPlotChart from "@/components/BoxPlotChart";
 import ScatterPlot from "@/components/ScatterPlot";
 import DataCleaningTools from "@/components/DataCleaningTools";
+import RadarChart from "@/components/RadarChart";
+import ChoroplethMap from "@/components/ChoroplethMap";
 import {
   BarChart,
   Bar,
@@ -38,6 +42,11 @@ export default function VisualizationPage() {
   const [selectedCol, setSelectedCol] = useState<string>("");
   const [scatterX, setScatterX] = useState<string>("");
   const [scatterY, setScatterY] = useState<string>("");
+  const [radarCategory, setRadarCategory] = useState<string>("");
+  const [radarMetrics, setRadarMetrics] = useState<string[]>([]);
+  const [mapLocation, setMapLocation] = useState<string>("");
+  const [mapValue, setMapValue] = useState<string>("");
+
   const [aiQuery, setAiQuery] = useState("");
   const [isGeneratingChart, setIsGeneratingChart] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
@@ -70,6 +79,12 @@ export default function VisualizationPage() {
   const activeScatterX = scatterX || numCols[0] || "";
   const activeScatterY = scatterY || numCols[1] || numCols[0] || "";
 
+  const activeRadarCategory = radarCategory || catCols[0] || "";
+  const activeRadarMetrics = radarMetrics.length > 0 ? radarMetrics : numCols.slice(0, 3);
+
+  const activeMapLocation = mapLocation || catCols[0] || "";
+  const activeMapValue = mapValue || numCols[0] || "";
+
   const isNumerical = useMemo(
     () => dataset?.columnInfos.find((c) => c.name === activeCol)?.type === "numerical",
     [dataset, activeCol]
@@ -87,6 +102,16 @@ export default function VisualizationPage() {
   }, [dataset, activeCol, isNumerical]);
 
   const missingWithData = useMemo(() => missingValues.filter((m) => m.missing > 0), [missingValues]);
+
+  const radarData = useMemo(() => {
+    if (!dataset || !activeRadarCategory || activeRadarMetrics.length === 0) return [];
+    return getRadarData(dataset.data, activeRadarCategory, activeRadarMetrics);
+  }, [dataset, activeRadarCategory, activeRadarMetrics]);
+
+  const mapData = useMemo(() => {
+    if (!dataset || !activeMapLocation || !activeMapValue) return [];
+    return getMapData(dataset.data, activeMapLocation, activeMapValue);
+  }, [dataset, activeMapLocation, activeMapValue]);
 
   const handleAiQuery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +179,8 @@ export default function VisualizationPage() {
           <TabsTrigger value="summary" className="text-xs sm:text-sm">Summary</TabsTrigger>
           <TabsTrigger value="distribution" className="text-xs sm:text-sm">Distributions</TabsTrigger>
           <TabsTrigger value="scatter" className="text-xs sm:text-sm">Scatter</TabsTrigger>
+          <TabsTrigger value="radar" className="text-xs sm:text-sm">Radar</TabsTrigger>
+          <TabsTrigger value="map" className="text-xs sm:text-sm">Map</TabsTrigger>
           <TabsTrigger value="correlation" className="text-xs sm:text-sm">Correlation</TabsTrigger>
           <TabsTrigger value="missing" className="text-xs sm:text-sm">Missing</TabsTrigger>
           <TabsTrigger value="cleaning" className="text-xs sm:text-sm">Cleaning</TabsTrigger>
@@ -282,6 +309,59 @@ export default function VisualizationPage() {
               </div>
               <ScatterPlot data={dataset.data} xCol={activeScatterX} yCol={activeScatterY} />
             </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="radar" className="space-y-4">
+          {catCols.length === 0 || numCols.length === 0 ? (
+            <p className="text-muted-foreground">Need at least 1 categorical and 1 numerical column for radar chart.</p>
+          ) : (
+            <div className="rounded-xl bg-card shadow-card border border-border p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
+                <Select value={activeRadarCategory} onValueChange={setRadarCategory}>
+                  <SelectTrigger className="w-full sm:w-48 bg-background">
+                    <SelectValue placeholder="Category (e.g. Country)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {catCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="flex-1 text-sm text-muted-foreground flex items-center">
+                  Showing top categories averaged across selected metrics.
+                  (Select multiple metrics to compare shapes)
+                </div>
+              </div>
+              <RadarChart data={radarData} metrics={activeRadarMetrics} />
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="map" className="space-y-4">
+          {catCols.length === 0 || numCols.length === 0 ? (
+            <p className="text-muted-foreground">Need at least 1 categorical/location and 1 numerical column for a map.</p>
+          ) : (
+            <div className="rounded-xl bg-card shadow-card border border-border p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
+                <Select value={activeMapLocation} onValueChange={setMapLocation}>
+                  <SelectTrigger className="w-full sm:w-48 bg-background">
+                    <SelectValue placeholder="Location Column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {catCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <span className="text-muted-foreground self-center hidden sm:block">colored by</span>
+                <Select value={activeMapValue} onValueChange={setMapValue}>
+                  <SelectTrigger className="w-full sm:w-48 bg-background">
+                    <SelectValue placeholder="Value Column" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {numCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <ChoroplethMap data={mapData} />
+            </div>
           )}
         </TabsContent>
 

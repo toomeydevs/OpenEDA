@@ -219,3 +219,60 @@ export function getCategoricalDistribution(data: Record<string, unknown>[], colu
     .slice(0, 20)
     .map(([category, count]) => ({ category, count }));
 }
+
+export function getRadarData(
+  data: Record<string, unknown>[],
+  categoryCol: string,
+  valueCols: string[]
+): Record<string, unknown>[] {
+  const aggregated: Record<string, Record<string, { sum: number; count: number }>> = {};
+
+  for (const row of data) {
+    const category = String(row[categoryCol] ?? "Unknown");
+    if (!aggregated[category]) aggregated[category] = {};
+
+    for (const valCol of valueCols) {
+      const val = Number(row[valCol]);
+      if (!isNaN(val)) {
+        if (!aggregated[category][valCol]) aggregated[category][valCol] = { sum: 0, count: 0 };
+        aggregated[category][valCol].sum += val;
+        aggregated[category][valCol].count += 1;
+      }
+    }
+  }
+
+  // Convert to averages and take top 10 categories to avoid cluttering the radar
+  return Object.entries(aggregated)
+    .slice(0, 8)
+    .map(([category, values]) => {
+      const result: Record<string, unknown> = { category };
+      for (const valCol of valueCols) {
+        if (values[valCol]) {
+          result[valCol] = values[valCol].sum / values[valCol].count;
+        } else {
+          result[valCol] = 0;
+        }
+      }
+      return result;
+    });
+}
+
+export function getMapData(
+  data: Record<string, unknown>[],
+  locationCol: string,
+  valueCol: string
+): { location: string; value: number }[] {
+  const aggregated: Record<string, number> = {};
+
+  for (const row of data) {
+    // Basic cleanup: trim and uppercase for easier matching with iso3 codes or state names
+    const location = String(row[locationCol] || "").trim().toUpperCase();
+    const val = Number(row[valueCol]);
+
+    if (location && !isNaN(val)) {
+      aggregated[location] = (aggregated[location] || 0) + val;
+    }
+  }
+
+  return Object.entries(aggregated).map(([location, value]) => ({ location, value }));
+}
