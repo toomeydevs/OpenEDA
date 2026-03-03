@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Upload, BarChart3, Eye, FileText, Database, Menu, X, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useData } from "@/context/DataContext";
@@ -15,7 +15,8 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { dataset, fileName } = useData();
+  const navigate = useNavigate();
+  const { dataset, fileName, clearData } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -107,11 +108,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {dataset && fileName && (
         <div className="border-b border-border bg-card/50">
-          <div className="container flex h-9 sm:h-10 items-center gap-2 text-xs sm:text-sm text-muted-foreground overflow-x-auto">
-            <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-            <span className="font-mono text-xs truncate">{fileName}</span>
-            <span className="text-muted-foreground/50">•</span>
-            <span className="whitespace-nowrap">{dataset.rows.toLocaleString()} rows × {dataset.columns} columns</span>
+          <div className="container flex h-9 sm:h-10 items-center justify-between text-xs sm:text-sm text-muted-foreground overflow-x-auto">
+            <div className="flex items-center gap-2">
+              <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+              <span className="font-mono text-xs truncate">{fileName}</span>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="whitespace-nowrap">{dataset.rows.toLocaleString()} rows × {dataset.columns} columns</span>
+            </div>
+
+            <button
+              onClick={() => { clearData(); navigate("/"); }}
+              className="px-2 py-1 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-md text-xs font-medium transition-colors shrink-0"
+            >
+              Start Over
+            </button>
           </div>
         </div>
       )}
