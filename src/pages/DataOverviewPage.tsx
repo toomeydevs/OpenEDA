@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Hash, Type, Calendar, AlertCircle, ArrowRight, Search, Filter } from "lucide-react";
+import { Hash, Type, Calendar, AlertCircle, ArrowRight, Search, Filter, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from "@/context/DataContext";
 import { Badge } from "@/components/ui/badge";
 import DataPreviewTable from "@/components/DataPreviewTable";
+import { generateDatasetInsights } from "@/lib/aiService";
+import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 const typeIcon = {
   numerical: Hash,
@@ -28,6 +31,22 @@ export default function DataOverviewPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [insights, setInsights] = useState<string | null>(null);
+
+  const handleGenerateInsights = async () => {
+    if (!dataset) return;
+    setIsGeneratingInsights(true);
+    try {
+      const generatedInsights = await generateDatasetInsights(dataset);
+      setInsights(generatedInsights);
+      toast.success("Insights generated successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate insights.");
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
 
   const counts = useMemo(() => {
     if (!dataset) return { numerical: 0, categorical: 0, date: 0 };
@@ -78,6 +97,34 @@ export default function DataOverviewPage() {
             <p className="text-xl sm:text-2xl font-bold text-foreground">{item.value}</p>
           </div>
         ))}
+      </motion.div>
+
+      {/* AI Insights Section */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="rounded-xl bg-card shadow-card border border-border p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Automated AI Insights
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">Get instant hypotheses and statistical findings based on your dataset metadata.</p>
+          </div>
+          <Button
+            onClick={handleGenerateInsights}
+            disabled={isGeneratingInsights}
+            variant={insights ? "outline" : "default"}
+            className="shrink-0 gap-2"
+          >
+            {isGeneratingInsights ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isGeneratingInsights ? "Analyzing..." : insights ? "Regenerate Insights" : "Generate Insights"}
+          </Button>
+        </div>
+
+        {insights && (
+          <div className="mt-6 p-5 rounded-lg bg-primary/5 border border-primary/10 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:marker:text-primary">
+            <ReactMarkdown>{insights}</ReactMarkdown>
+          </div>
+        )}
       </motion.div>
 
       {/* Data Preview */}

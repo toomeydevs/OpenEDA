@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useData } from "@/context/DataContext";
 import { useState } from "react";
 import { useTheme } from "next-themes";
+import { AISettingsDialog } from "./AISettingsDialog";
 
 const navItems = [
   { path: "/", label: "Upload", icon: Upload },
@@ -82,6 +83,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Sun className="h-4 w-4 hidden dark:block" />
               <Moon className="h-4 w-4 block dark:hidden" />
             </button>
+
+            {/* AI Settings */}
+            <AISettingsDialog />
 
             {/* Mobile menu button */}
             <button

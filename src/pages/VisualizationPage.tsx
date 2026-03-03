@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from "@/context/DataContext";
@@ -14,6 +15,8 @@ import {
   getCategoricalDistribution,
   getBoxPlotData,
 } from "@/lib/dataAnalysis";
+import { generateChartSuggestion } from "@/lib/aiService";
+import { toast } from "sonner";
 import BoxPlotChart from "@/components/BoxPlotChart";
 import ScatterPlot from "@/components/ScatterPlot";
 import DataCleaningTools from "@/components/DataCleaningTools";
@@ -35,6 +38,9 @@ export default function VisualizationPage() {
   const [selectedCol, setSelectedCol] = useState<string>("");
   const [scatterX, setScatterX] = useState<string>("");
   const [scatterY, setScatterY] = useState<string>("");
+  const [aiQuery, setAiQuery] = useState("");
+  const [isGeneratingChart, setIsGeneratingChart] = useState(false);
+  const [activeTab, setActiveTab] = useState("summary");
 
   const summaryStats = useMemo(
     () => (dataset ? computeSummaryStats(dataset.data, dataset.columnInfos) : []),
@@ -82,6 +88,32 @@ export default function VisualizationPage() {
 
   const missingWithData = useMemo(() => missingValues.filter((m) => m.missing > 0), [missingValues]);
 
+  const handleAiQuery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiQuery.trim() || !dataset) return;
+
+    setIsGeneratingChart(true);
+    try {
+      const suggestion = await generateChartSuggestion(aiQuery, dataset);
+
+      if (suggestion.type === "scatter") {
+        setActiveTab("scatter");
+        setScatterX(suggestion.xAxis);
+        setScatterY(suggestion.yAxis);
+      } else {
+        setActiveTab("distribution");
+        setSelectedCol(suggestion.xAxis || suggestion.yAxis);
+      }
+
+      toast.success(`Generated ${suggestion.type} chart based on your request.`);
+      setAiQuery("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate chart suggestion.");
+    } finally {
+      setIsGeneratingChart(false);
+    }
+  };
+
   if (!dataset) {
     navigate("/");
     return null;
@@ -100,7 +132,24 @@ export default function VisualizationPage() {
         <p className="text-sm sm:text-base text-muted-foreground">Explore summary statistics, distributions, correlations, and missing values.</p>
       </motion.div>
 
-      <Tabs defaultValue="summary" className="space-y-4 sm:space-y-6">
+      {/* AI Chart Builder */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <form onSubmit={handleAiQuery} className="flex gap-2 p-1 rounded-xl bg-card border border-border shadow-sm items-center">
+          <MessageSquare className="h-5 w-5 text-primary/70 ml-3 shrink-0" />
+          <Input
+            value={aiQuery}
+            onChange={(e) => setAiQuery(e.target.value)}
+            placeholder="Ask AI to build a chart (e.g. 'Show me the distribution of Age')"
+            className="border-0 focus-visible:ring-0 shadow-none px-2"
+          />
+          <Button type="submit" disabled={isGeneratingChart || !aiQuery.trim()} className="shrink-0 gap-2 rounded-lg">
+            {isGeneratingChart ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            <span className="hidden sm:inline">Build</span>
+          </Button>
+        </form>
+      </motion.div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
         <TabsList className="bg-card border border-border flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="summary" className="text-xs sm:text-sm">Summary</TabsTrigger>
           <TabsTrigger value="distribution" className="text-xs sm:text-sm">Distributions</TabsTrigger>
