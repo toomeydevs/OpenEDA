@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, FileSpreadsheet, ArrowRight } from "lucide-react";
+import { Upload, FileSpreadsheet, ArrowRight, Link as LinkIcon, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { parseFile } from "@/lib/fileParser";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseFile, fetchDataFromUrl } from "@/lib/fileParser";
 import { analyzeDataset } from "@/lib/dataAnalysis";
 import { useData } from "@/context/DataContext";
 import { toast } from "sonner";
@@ -13,8 +15,51 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
   const { setDataset, setFileName, dataset } = useData();
   const navigate = useNavigate();
+
+  const handleDataLoad = useCallback(
+    (data: Record<string, unknown>[], filename: string) => {
+      setProgress(60);
+      try {
+        const info = analyzeDataset(data);
+        setProgress(90);
+
+        setDataset(info);
+        setFileName(filename);
+        setProgress(100);
+
+        toast.success(`Loaded ${info.rows.toLocaleString()} rows and ${info.columns} columns.`);
+
+        setTimeout(() => navigate("/overview"), 500);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to analyze data.");
+        setIsLoading(false);
+      }
+    },
+    [setDataset, setFileName, navigate]
+  );
+
+  const processUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!urlInput.trim()) {
+      toast.error("Please enter a valid URL.");
+      return;
+    }
+
+    setIsLoading(true);
+    setProgress(20);
+
+    try {
+      const { data, filename } = await fetchDataFromUrl(urlInput.trim());
+      handleDataLoad(data, filename);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fetch data from URL.");
+      setIsLoading(false);
+      setProgress(0);
+    }
+  };
 
   const processFile = useCallback(
     async (file: File) => {
@@ -29,25 +74,13 @@ export default function UploadPage() {
 
       try {
         const data = await parseFile(file);
-        setProgress(60);
-
-        const info = analyzeDataset(data);
-        setProgress(90);
-
-        setDataset(info);
-        setFileName(file.name);
-        setProgress(100);
-
-        toast.success(`Loaded ${info.rows.toLocaleString()} rows and ${info.columns} columns.`);
-
-        setTimeout(() => navigate("/overview"), 500);
+        handleDataLoad(data, file.name);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to parse file.");
-      } finally {
         setIsLoading(false);
       }
     },
-    [setDataset, setFileName, navigate]
+    [handleDataLoad]
   );
 
   const onDrop = useCallback(
@@ -90,43 +123,92 @@ export default function UploadPage() {
         transition={{ duration: 0.5, delay: 0.15 }}
         className="w-full max-w-xl"
       >
-        <label
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={onDrop}
-          className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${isDragging
-              ? "border-primary bg-primary/5 scale-[1.02]"
-              : "border-border hover:border-primary/50 hover:bg-card"
-            }`}
-        >
-          <input
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            onChange={onFileSelect}
-            className="sr-only"
-            disabled={isLoading}
-          />
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mb-4">
-            {isLoading ? (
-              <FileSpreadsheet className="h-7 w-7 text-primary animate-pulse" />
-            ) : (
-              <Upload className="h-7 w-7 text-primary" />
-            )}
-          </div>
-          <p className="text-base font-medium text-foreground mb-1">
-            {isLoading ? "Processing..." : "Drop your file here, or click to browse"}
-          </p>
-          <p className="text-sm text-muted-foreground">Supports CSV, XLSX, XLS</p>
+        <Tabs defaultValue="local" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4 bg-secondary">
+            <TabsTrigger value="local">Local File</TabsTrigger>
+            <TabsTrigger value="url">From URL</TabsTrigger>
+          </TabsList>
 
-          {isLoading && (
-            <div className="w-full mt-6">
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
-        </label>
+          <TabsContent value="local">
+            <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={onDrop}
+              className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${isDragging
+                ? "border-primary bg-primary/5 scale-[1.02]"
+                : "border-border hover:border-primary/50 hover:bg-card"
+                }`}
+            >
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={onFileSelect}
+                className="sr-only"
+                disabled={isLoading}
+              />
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mb-4">
+                {isLoading ? (
+                  <FileSpreadsheet className="h-7 w-7 text-primary animate-pulse" />
+                ) : (
+                  <Upload className="h-7 w-7 text-primary" />
+                )}
+              </div>
+              <p className="text-base font-medium text-foreground mb-1">
+                {isLoading ? "Processing..." : "Drop your file here, or click to browse"}
+              </p>
+              <p className="text-sm text-muted-foreground">Supports CSV, XLSX, XLS</p>
+
+              {isLoading && (
+                <div className="w-full mt-6">
+                  <Progress value={progress} className="h-2" />
+                </div>
+              )}
+            </label>
+          </TabsContent>
+
+          <TabsContent value="url">
+            <form onSubmit={processUrl} className="flex flex-col items-center justify-center rounded-2xl border-2 border-border p-8 sm:p-12 transition-all duration-200 bg-card">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mb-6">
+                {isLoading ? (
+                  <Download className="h-7 w-7 text-primary animate-pulse" />
+                ) : (
+                  <LinkIcon className="h-7 w-7 text-primary" />
+                )}
+              </div>
+
+              <div className="w-full max-w-md space-y-4">
+                <div className="space-y-2 text-center">
+                  <h3 className="font-medium text-foreground">Import from Public API</h3>
+                  <p className="text-sm text-muted-foreground">Enter a URL to a public JSON array or CSV file.</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://api.example.com/data.json"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    disabled={isLoading}
+                    className="flex-1 bg-background"
+                    required
+                  />
+                  <Button type="submit" disabled={isLoading} className="shrink-0 gap-2">
+                    {isLoading ? "Fetching..." : "Fetch Data"} <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {isLoading && (
+                  <div className="w-full mt-4">
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                )}
+              </div>
+            </form>
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
       {dataset && (
