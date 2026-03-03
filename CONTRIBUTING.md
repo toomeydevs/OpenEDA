@@ -1,6 +1,6 @@
-# Contributing to DataSpark Insights
+# Contributing to OpenEDA
 
-First off, thank you for considering contributing to DataSpark Insights! It's people like you that make DataSpark Insights such a great tool for the community.
+First off, thank you for considering contributing to OpenEDA! It's people like you that make OpenEDA such a great tool for the community.
 
 ## Bug Reports
 

@@ -1,11 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="256" height="256" rx="64" fill="url(#grad1)"/>
-  <path d="M64 192 V128 M128 192 V64 M192 192 V100" stroke="white" stroke-width="24" stroke-linecap="round" fill="none"/>
-  <circle cx="192" cy="100" r="16" fill="white" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+    <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+    <path d="M3 12A9 3 0 0 0 21 12"></path>
 </svg>

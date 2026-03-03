@@ -1,6 +1,6 @@
-# DataSpark Insights
+# OpenEDA
 
-DataSpark Insights is an open-source data exploration and visualization platform. It empowers users to quickly analyze datasets, explore visual trends, and extract meaningful insights directly from the client side without needing a backend server for processing.
+OpenEDA is an open-source data exploration and visualization platform. It empowers users to quickly analyze datasets, explore visual trends, and extract meaningful insights directly from the client side without needing a backend server for processing.
 
 ## Features
 
@@ -27,12 +27,12 @@ Ensure you have Node.js and npm installed.
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/your-username/dataspark-insights.git
+   git clone https://github.com/your-username/openeda.git
    ```
 
 2. Navigate into the project directory:
    ```sh
-   cd dataspark-insights
+   cd openeda
    ```
 
 3. Install dependencies:

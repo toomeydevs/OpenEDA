@@ -77,7 +77,7 @@ export default function UploadPage() {
         className="text-center max-w-2xl"
       >
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4">
-          Explore your data <span className="gradient-hero bg-clip-text text-transparent">instantly</span>
+          Explore your data <span className="text-primary">instantly</span>
         </h1>
         <p className="text-lg text-muted-foreground">
           Upload a CSV or Excel file and get auto-generated insights, statistics, and visualizations in seconds.
@@ -97,11 +97,10 @@ export default function UploadPage() {
           }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
-          className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${
-            isDragging
+          className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${isDragging
               ? "border-primary bg-primary/5 scale-[1.02]"
               : "border-border hover:border-primary/50 hover:bg-card"
-          }`}
+            }`}
         >
           <input
             type="file"
