@@ -71,7 +71,8 @@ export default function ReportPage() {
         });
 
         if (summaryStats.length > 0) {
-          const finalY = (doc as any).lastAutoTable?.finalY || 100;
+          const lastTable = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
+          const finalY = lastTable?.finalY ?? 100;
           if (finalY > 240) doc.addPage();
           doc.setFontSize(14);
           doc.setTextColor(30);

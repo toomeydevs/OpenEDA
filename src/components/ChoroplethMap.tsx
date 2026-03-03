@@ -13,6 +13,15 @@ interface ChoroplethMapProps {
 const normalizeLocation = (loc: string) => loc.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export default function ChoroplethMap({ data }: ChoroplethMapProps) {
+    // Create lookup dictionary — must be called BEFORE any early returns (hooks rules)
+    const dataMap = useMemo(() => {
+        const map: Record<string, number> = {};
+        for (const d of data) {
+            map[normalizeLocation(d.location)] = d.value;
+        }
+        return map;
+    }, [data]);
+
     if (!data || data.length === 0) {
         return (
             <div className="flex items-center justify-center p-8 text-muted-foreground w-full h-[350px]">
@@ -28,15 +37,6 @@ export default function ChoroplethMap({ data }: ChoroplethMapProps) {
     const colorScale = scaleLinear<string>()
         .domain([minVal, maxVal])
         .range(["#eff6ff", "#1d4ed8"]); // Light blue to dark blue
-
-    // Create a lookup dictionary
-    const dataMap = useMemo(() => {
-        const map: Record<string, number> = {};
-        for (const d of data) {
-            map[normalizeLocation(d.location)] = d.value;
-        }
-        return map;
-    }, [data]);
 
     return (
         <div className="w-full" style={{ aspectRatio: 16 / 9, maxHeight: 400 }}>

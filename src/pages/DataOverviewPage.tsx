@@ -41,8 +41,8 @@ export default function DataOverviewPage() {
       const generatedInsights = await generateDatasetInsights(dataset);
       setInsights(generatedInsights);
       toast.success("Insights generated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate insights.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate insights.");
     } finally {
       setIsGeneratingInsights(false);
     }

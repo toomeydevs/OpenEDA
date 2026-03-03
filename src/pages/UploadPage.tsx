@@ -57,8 +57,8 @@ export default function UploadPage() {
     try {
       const { data, filename } = await fetchDataFromUrl(urlInput.trim());
       handleDataLoad(data, filename);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to fetch data from URL.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to fetch data from URL.");
       setIsLoading(false);
       setProgress(0);
     }

@@ -55,9 +55,10 @@ Keep it concise, professional, and formatted in Markdown. DO NOT write code. DO 
         });
 
         return response.text() || 'No insights could be generated.';
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error generating insights:', error);
-        throw new Error(error?.message || 'Failed to generate AI insights.');
+        const msg = error instanceof Error ? error.message : 'Failed to generate AI insights.';
+        throw new Error(msg);
     }
 }
 
@@ -94,8 +95,9 @@ You must respond with ONLY a valid JSON object matching this schema, with no mar
         const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
         return JSON.parse(jsonStr);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error generating chart suggestion:', error);
-        throw new Error(error?.message || 'Failed to generate chart suggestion. Please try rephrasing your request.');
+        const msg = error instanceof Error ? error.message : 'Failed to generate chart suggestion. Please try rephrasing your request.';
+        throw new Error(msg);
     }
 }

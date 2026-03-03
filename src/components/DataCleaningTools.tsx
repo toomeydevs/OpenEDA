@@ -185,7 +185,7 @@ export default function DataCleaningTools() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={fillStrategy} onValueChange={(v) => setFillStrategy(v as any)}>
+            <Select value={fillStrategy} onValueChange={(v) => setFillStrategy(v as "mean" | "median" | "mode")}>
               <SelectTrigger className="w-full sm:w-28 bg-card text-xs h-8">
                 <SelectValue />
               </SelectTrigger>

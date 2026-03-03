@@ -132,8 +132,8 @@ export default function VisualizationPage() {
 
       toast.success(`Generated ${suggestion.type} chart based on your request.`);
       setAiQuery("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to generate chart suggestion.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate chart suggestion.");
     } finally {
       setIsGeneratingChart(false);
     }
@@ -391,7 +391,7 @@ export default function VisualizationPage() {
                     tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                   />
                   <Tooltip
-                    formatter={(val: number, _name: string, props: any) => [
+                    formatter={(val: number, _name: string, props: { payload?: { percentage?: number } }) => [
                       `${val} (${props.payload.percentage.toFixed(1)}%)`,
                       "Missing",
                     ]}

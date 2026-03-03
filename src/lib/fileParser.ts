@@ -67,8 +67,8 @@ export async function fetchDataFromUrl(url: string): Promise<{ data: Record<stri
       const data = await parseCSV(text);
       return { data, filename: filename.endsWith(".csv") ? filename : `${filename}.csv` };
     }
-  } catch (error: any) {
-    if (error.name === "TypeError" && error.message.includes("fetch")) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error("Network error or CORS issue. Make sure the URL is public and allows Cross-Origin requests.");
     }
     throw error;
