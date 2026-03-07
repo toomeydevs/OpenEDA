@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useData } from "@/context/DataContext";
 import {
   computeSummaryStats,
   computeMissingValues,
   computeCorrelation,
 } from "@/lib/dataAnalysis";
+import { hexToRgb } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -16,6 +19,9 @@ export default function ReportPage() {
   const { dataset, fileName } = useData();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [reportTitle, setReportTitle] = useState("OpenEDA Report");
+  const [author, setAuthor] = useState("");
+  const [themeColor, setThemeColor] = useState("#2962A8");
 
   const summaryStats = useMemo(
     () => (dataset ? computeSummaryStats(dataset.data, dataset.columnInfos) : []),
@@ -45,29 +51,37 @@ export default function ReportPage() {
     setTimeout(() => {
       try {
         const doc = new jsPDF();
+        const rgb = hexToRgb(themeColor);
 
         doc.setFontSize(22);
-        doc.setTextColor(41, 98, 168);
-        doc.text("OpenEDA Report", 14, 25);
+        doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+        doc.text(reportTitle, 14, 25);
 
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.text(`File: ${fileName}`, 14, 33);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 39);
-        doc.text(`${dataset.rows.toLocaleString()} rows × ${dataset.columns} columns`, 14, 45);
+        if (author.trim()) {
+          doc.text(`Author: ${author.trim()}`, 14, 39);
+          doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 45);
+          doc.text(`${dataset.rows.toLocaleString()} rows × ${dataset.columns} columns`, 14, 51);
+        } else {
+          doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 39);
+          doc.text(`${dataset.rows.toLocaleString()} rows × ${dataset.columns} columns`, 14, 45);
+        }
 
+        const overviewStartY = author.trim() ? 64 : 58;
         doc.setFontSize(14);
         doc.setTextColor(30);
-        doc.text("Column Overview", 14, 58);
+        doc.text("Column Overview", 14, overviewStartY);
 
         autoTable(doc, {
-          startY: 62,
+          startY: overviewStartY + 4,
           head: [["Column", "Type", "Non-Null", "Missing", "Unique"]],
           body: dataset.columnInfos.map((c) => [
             c.name, c.type, c.nonNullCount.toString(), c.nullCount.toString(), c.uniqueCount.toString(),
           ]),
           styles: { fontSize: 8 },
-          headStyles: { fillColor: [41, 98, 168] },
+          headStyles: { fillColor: rgb },
         });
 
         if (summaryStats.length > 0) {
@@ -84,7 +98,7 @@ export default function ReportPage() {
               s.column, fmt(s.count), fmt(s.mean), fmt(s.std), fmt(s.min), fmt(s.q25), fmt(s.median), fmt(s.q75), fmt(s.max),
             ]),
             styles: { fontSize: 7 },
-            headStyles: { fillColor: [41, 98, 168] },
+            headStyles: { fillColor: rgb },
           });
         }
 
@@ -114,7 +128,7 @@ export default function ReportPage() {
               correlation.columns[i], ...row.map((v) => v.toFixed(2)),
             ]),
             styles: { fontSize: 6 },
-            headStyles: { fillColor: [41, 98, 168] },
+            headStyles: { fillColor: rgb },
           });
         }
 
@@ -161,6 +175,41 @@ export default function ReportPage() {
             <div className="rounded-lg bg-muted p-3">
               <p className="text-muted-foreground">Data points</p>
               <p className="text-lg font-semibold text-foreground">{(dataset.rows * dataset.columns).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="w-full space-y-4 text-left">
+            <h3 className="text-sm font-semibold text-foreground">Report Branding</h3>
+            <div className="space-y-2">
+              <Label htmlFor="report-title">Report Title</Label>
+              <Input
+                id="report-title"
+                value={reportTitle}
+                onChange={(e) => setReportTitle(e.target.value)}
+                placeholder="OpenEDA Report"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="report-author">Author</Label>
+              <Input
+                id="report-author"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="Your name (optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="theme-color">Theme Color</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="theme-color"
+                  type="color"
+                  value={themeColor}
+                  onChange={(e) => setThemeColor(e.target.value)}
+                  className="h-9 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
+                />
+                <span className="text-sm text-muted-foreground font-mono">{themeColor.toUpperCase()}</span>
+              </div>
             </div>
           </div>
 
